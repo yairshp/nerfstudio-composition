@@ -277,18 +277,46 @@ class NerfactoModel(Model):
             )
         return callbacks
 
-    def get_outputs(self, ray_bundle: RayBundle):
+    def get_outputs(self, ray_bundle: RayBundle, fg_pipeline=None, fg_ray_bundle=None):
         ray_samples: RaySamples
         ray_samples, weights_list, ray_samples_list = self.proposal_sampler(ray_bundle, density_fns=self.density_fns)
         field_outputs = self.field.forward(ray_samples, compute_normals=self.config.predict_normals)
-        if self.config.use_gradient_scaling:
-            field_outputs = scale_gradients_by_distance_squared(field_outputs, ray_samples)
+        if fg_pipeline is not None:
+            fg_ray_samples, fg_weights_list, fg_ray_samples_list = fg_pipeline.model.proposal_sampler(fg_ray_bundle, density_fns=fg_pipeline.model.density_fns)
+            fg_field_outputs = fg_pipeline.model.field.forward(fg_ray_samples, compute_normals=self.config.predict_normals)
+            density = field_outputs[FieldHeadNames.DENSITY].clone()
+            density_mask = field_outputs[FieldHeadNames.DENSITY] <= 0.001
+            white_color_mask = (fg_field_outputs[FieldHeadNames.RGB] != 1.).all(axis=2).unsqueeze(2)
+            nan_mask = ~(torch.isnan(fg_field_outputs[FieldHeadNames.RGB]).all(axis=2).unsqueeze(2))
+            mask = (density_mask & white_color_mask & nan_mask)
+            # density[(density_mask & white_color_mask)] = fg_field_outputs[FieldHeadNames.DENSITY][(density_mask & white_color_mask)]
+            density[mask] = fg_field_outputs[FieldHeadNames.DENSITY][mask]
+            weights = ray_samples.get_weights(density)
+            # weights = ray_samples.get_weights(field_outputs[FieldHeadNames.DENSITY] + fg_field_outputs[FieldHeadNames.DENSITY])
+            weights_list.append(weights)
+            ray_samples_list.append(ray_samples)
+            rgbs = field_outputs[FieldHeadNames.RGB].clone()
+            # rgbs[field_outputs[FieldHeadNames.DENSITY] == 0] = fg_field_outputs[FieldHeadNames.RGB][field_outputs[FieldHeadNames.DENSITY] == 0]
+            # density_mask = field_outputs[FieldHeadNames.DENSITY] <= 0.001
+            # white_color_mask = fg_field_outputs[FieldHeadNames.RGB] != 1.
+            # white_color_mask = (fg_field_outputs[FieldHeadNames.RGB] != 1.).all(axis=2).unsqueeze(2)
+            # rgbs[field_outputs[FieldHeadNames.DENSITY].expand(-1, -1 ,3) <= 0.001] = fg_field_outputs[FieldHeadNames.RGB][field_outputs[FieldHeadNames.DENSITY].expand(-1, -1, 3) <= 0.001]
+            rgbs[mask.expand(-1, -1, 3)] = fg_field_outputs[FieldHeadNames.RGB][mask.expand(-1, -1 ,3)]
+            # rgbs[(density_mask & white_color_mask).expand(-1, -1, 3)] = fg_field_outputs[FieldHeadNames.RGB][(density_mask & white_color_mask).expand(-1, -1 ,3)]
+            rgb_outputs = rgbs
+            # rgb_outputs = field_outputs[FieldHeadNames.RGB] + fg_field_outputs[FieldHeadNames.RGB]
+            # rgb_outputs = field_outputs[FieldHeadNames.RGB] + fg_field_outputs[FieldHeadNames.RGB]
+        # if self.config.use_gradient_scaling:
+        #     field_outputs = scale_gradients_by_distance_squared(field_outputs, ray_samples)
+        #     fg_field_outputs = scale_gradients_by_distance_squared(fg_field_outputs, ray_samples)
+        else:
+            weights = ray_samples.get_weights(field_outputs[FieldHeadNames.DENSITY])
+            weights_list.append(weights)
+            ray_samples_list.append(ray_samples)
+            rgb_outputs = field_outputs[FieldHeadNames.RGB]
 
-        weights = ray_samples.get_weights(field_outputs[FieldHeadNames.DENSITY])
-        weights_list.append(weights)
-        ray_samples_list.append(ray_samples)
 
-        rgb = self.renderer_rgb(rgb=field_outputs[FieldHeadNames.RGB], weights=weights)
+        rgb = self.renderer_rgb(rgb=rgb_outputs, weights=weights)
         with torch.no_grad():
             depth = self.renderer_depth(weights=weights, ray_samples=ray_samples)
         expected_depth = self.renderer_expected_depth(weights=weights, ray_samples=ray_samples)

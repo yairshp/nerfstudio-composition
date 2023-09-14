@@ -69,6 +69,7 @@ def eval_setup(
     config_path: Path,
     eval_num_rays_per_chunk: Optional[int] = None,
     test_mode: Literal["test", "val", "inference"] = "test",
+    checkpoint_path: Optional[str] = None
 ) -> Tuple[TrainerConfig, Pipeline, Path, int]:
     """Shared setup for loading a saved pipeline for evaluation.
 
@@ -94,7 +95,16 @@ def eval_setup(
 
     # load checkpoints from wherever they were saved
     # TODO: expose the ability to choose an arbitrary checkpoint
-    config.load_dir = config.get_checkpoint_dir()
+    if checkpoint_path is None:
+        config.load_dir = config.get_checkpoint_dir()
+    else:
+        if checkpoint_path[0] == '/':
+            checkpoint_path_components = checkpoint_path.split('/')[1:]
+            checkpoint_path_components[0] = f"/{checkpoint_path_components[0]}"
+        else:
+            checkpoint_path_components = checkpoint_path.split('/')
+        config.load_dir = Path(*checkpoint_path_components)
+
     if isinstance(config.pipeline.datamanager, VanillaDataManagerConfig):
         config.pipeline.datamanager.eval_image_indices = None
 
@@ -105,6 +115,6 @@ def eval_setup(
     pipeline.eval()
 
     # load checkpointed information
-    checkpoint_path, step = eval_load_checkpoint(config, pipeline)
+    load_path, step = eval_load_checkpoint(config, pipeline)
 
-    return config, pipeline, checkpoint_path, step
+    return config, pipeline, load_path, step

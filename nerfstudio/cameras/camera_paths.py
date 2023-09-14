@@ -120,7 +120,7 @@ def get_spiral_path(
     )
 
 
-def get_path_from_json(camera_path: Dict[str, Any]) -> Cameras:
+def get_path_from_json(camera_path: Dict[str, Any], do_transformations: bool = False) -> Cameras:
     """Takes a camera path dictionary and returns a trajectory as a Camera instance.
 
     Args:
@@ -151,7 +151,13 @@ def get_path_from_json(camera_path: Dict[str, Any]) -> Cameras:
     fys = []
     for camera in camera_path["camera_path"]:
         # pose
-        c2w = torch.tensor(camera["camera_to_world"]).view(4, 4)[:3]
+        # if True:
+        if do_transformations:
+            transformation_matrix = torch.tensor([[1.8, 0., 0., 0.], [0., 1.8, 0., 0.], [0., 0., 1.8, -0.1], [0., 0., 0., 1.]])
+            camera_to_world_matrix = torch.tensor(camera["camera_to_world"]).view(4, 4)
+            c2w = (transformation_matrix @ camera_to_world_matrix)[:3]
+        else:
+            c2w = torch.tensor(camera["camera_to_world"]).view(4, 4)[:3]
         c2ws.append(c2w)
         if camera_type in [
             CameraType.EQUIRECTANGULAR,

@@ -227,14 +227,17 @@ class NerfactoField(Field):
         return density, base_mlp_out
 
     def get_outputs(
-        self, ray_samples: RaySamples, density_embedding: Optional[Tensor] = None
+        self, ray_samples: RaySamples, density_embedding: Optional[Tensor] = None, directions: Optional[Tensor]=None
     ) -> Dict[FieldHeadNames, Tensor]:
         assert density_embedding is not None
         outputs = {}
         if ray_samples.camera_indices is None:
             raise AttributeError("Camera indices are not provided.")
         camera_indices = ray_samples.camera_indices.squeeze()
-        directions = get_normalized_directions(ray_samples.frustums.directions)
+        if directions is None:
+            directions = get_normalized_directions(ray_samples.frustums.directions)
+        else:
+            directions = get_normalized_directions(Tensor(directions))
         directions_flat = directions.view(-1, 3)
         d = self.direction_encoding(directions_flat)
 
