@@ -28,6 +28,7 @@ from nerfstudio.utils import colormaps, writer
 from nerfstudio.utils.writer import GLOBAL_BUFFER, EventName, TimeWriter
 from nerfstudio.viewer.server import viewer_utils
 from nerfstudio.viewer.viser.messages import CameraMessage
+from nerfstudio.data.scene_box import SceneBox
 
 if TYPE_CHECKING:
     from nerfstudio.viewer.server.viewer_state import ViewerState
@@ -124,10 +125,30 @@ class RenderStateMachine(threading.Thread):
         image_height, image_width = self._calculate_image_res(cam_msg.aspect)
 
         camera: Optional[Cameras] = self.viewer.get_camera(image_height, image_width)
+
+        #! FG Camera
+        if self.viewer.fg_pipeline is not None:
+            fg_camera = self.viewer.get_camera(image_height, image_width, do_transformations=True)
+        else:
+            fg_camera = None
+
+        #! FG Crop Data
+        if self.viewer.fg_crop_data is not None:
+            fg_crop_min, fg_crop_max = self.viewer.fg_crop_data
+            crop_min_tensor = torch.tensor(fg_crop_min, dtype=torch.float32)
+            crop_max_tensor = torch.tensor(fg_crop_max, dtype=torch.float32)
+            fg_render_aabb = SceneBox(aabb=torch.stack([crop_min_tensor, crop_max_tensor], dim=0))
+        else:
+            fg_render_aabb = None
+        
         assert camera is not None, "render called before viewer connected"
 
         with self.viewer.train_lock if self.viewer.train_lock is not None else contextlib.nullcontext():
             camera_ray_bundle = camera.generate_rays(camera_indices=0, aabb_box=self.viewer.get_model().render_aabb)
+
+            #! FG Ray Bundle
+            if fg_camera is not None:
+                fg_camera_ray_bundle = fg_camera.generate_rays(camera_indices=0, aabb_box=fg_render_aabb)
 
             with TimeWriter(None, None, write=False) as vis_t:
                 self.viewer.get_model().eval()

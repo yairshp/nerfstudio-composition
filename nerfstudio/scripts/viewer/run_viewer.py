@@ -18,10 +18,11 @@ Starts viewer in eval mode.
 """
 from __future__ import annotations
 
+import json
 import time
 from dataclasses import dataclass, field, fields
 from pathlib import Path
-from typing import Literal
+from typing import Literal, Optional, Union
 
 import tyro
 
@@ -55,6 +56,15 @@ class RunViewer:
     """Viewer configuration"""
     vis: Literal["viewer", "viewer_beta"] = "viewer"
     """Type of viewer"""
+    checkpoint_path: Optional[str] = None
+    """Path to the checkpoint file"""
+    #! FG Arguments
+    load_fg_config: Optional[Path] = None
+    """Path to config YAML file for the fg object"""
+    fg_camera_path_filename: Optional[Path] = None
+    """Filename of the camera path to render of the fg object."""
+    fg_checkpoint_path: Optional[str] = None
+    """"Path to checkpoint of the fg."""
 
     def main(self) -> None:
         """Main function."""
@@ -62,14 +72,31 @@ class RunViewer:
             self.load_config,
             eval_num_rays_per_chunk=None,
             test_mode="test",
+            checkpoint_path=self.checkpoint_path,
         )
+        if self.load_fg_config:
+            fg_config, fg_pipeline, _, _ = eval_setup(
+                self.load_fg_config,
+                eval_num_rays_per_chunk=None,
+                test_mode="test",
+                checkpoint_path=self.fg_checkpoint_path,
+            )
+        if self.fg_camera_path_filename:
+            with open(str(self.fg_camera_path_filename), "r", encoding="utf-8") as f:
+                fg_camera_data = json.load(f)
+            fg_crop_data = get_crop_from_json(fg_camera_data)
+
+        else:
+            fg_pipeline = None
         num_rays_per_chunk = config.viewer.num_rays_per_chunk
         assert self.viewer.num_rays_per_chunk == -1
         config.vis = self.vis
         config.viewer = self.viewer.as_viewer_config()
         config.viewer.num_rays_per_chunk = num_rays_per_chunk
 
-        _start_viewer(config, pipeline, step)
+        base_dir = None if self.checkpoint_path is None else self.checkpoint_path[:self.checkpoint_path.find("nerfstudio_models") - 1]
+
+        _start_viewer(config, pipeline, step, base_dir_str=base_dir)
 
     def save_checkpoint(self, *args, **kwargs):
         """
@@ -77,7 +104,7 @@ class RunViewer:
         """
 
 
-def _start_viewer(config: TrainerConfig, pipeline: Pipeline, step: int):
+def _start_viewer(config: TrainerConfig, pipeline: Pipeline, step: int, base_dir_str: Optional[str] = None, fg_pipeline: Optional[Pipeline] = None, fg_crop_data: Optional[tuple] = None):
     """Starts the viewer
 
     Args:
@@ -85,7 +112,15 @@ def _start_viewer(config: TrainerConfig, pipeline: Pipeline, step: int):
         pipeline: Pipeline instance of which to load weights
         step: Step at which the pipeline was saved
     """
-    base_dir = config.get_base_dir()
+    if base_dir_str is None:
+        base_dir = config.get_base_dir()
+    else:
+        if base_dir_str[0] == '/':
+            base_dir_components = base_dir_str.split('/')[1:]
+            base_dir_components[0] = f"/{base_dir_components[0]}"
+        else:
+            base_dir_components = base_dir_str.split('/')
+        base_dir = Path(*base_dir_components)
     viewer_log_path = base_dir / config.viewer.relative_log_filename
     banner_messages = None
     viewer_state = None
@@ -95,6 +130,8 @@ def _start_viewer(config: TrainerConfig, pipeline: Pipeline, step: int):
             log_filename=viewer_log_path,
             datapath=pipeline.datamanager.get_datapath(),
             pipeline=pipeline,
+            fg_pipeline=fg_pipeline,
+            fg_crop_data=fg_crop_data,
         )
         banner_messages = [f"Viewer at: {viewer_state.viewer_url}"]
     if config.vis == "viewer_beta":

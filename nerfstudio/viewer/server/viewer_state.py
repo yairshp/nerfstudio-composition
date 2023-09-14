@@ -83,6 +83,9 @@ class ViewerState:
         pipeline: Pipeline,
         trainer: Optional[Trainer] = None,
         train_lock: Optional[threading.Lock] = None,
+        #! FG Arguments
+        fg_pipeline: Optional[Pipeline] = None,
+        fg_crop_data: Optional[tuple] = None,
     ):
         self.config = config
         self.trainer = trainer
@@ -91,6 +94,10 @@ class ViewerState:
         self.pipeline = pipeline
         self.log_filename = log_filename
         self.datapath = datapath.parent if datapath.is_file() else datapath
+
+        #! FG Members
+        self.fg_pipeline = fg_pipeline
+        self.fg_crop_data = fg_crop_data
 
         if self.config.websocket_port is None:
             websocket_port = viewer_utils.get_free_port(default_port=self.config.websocket_port_default)
@@ -285,7 +292,7 @@ class ViewerState:
         if self.trainer is not None:
             self.trainer.training_state = training_state
 
-    def get_camera(self, image_height: int, image_width: int) -> Optional[Cameras]:
+    def get_camera(self, image_height: int, image_width: int, do_transformations: bool = False) -> Optional[Cameras]:
         """
         Return a Cameras object representing the camera for the viewer given the provided image height and width
         """
@@ -296,7 +303,14 @@ class ViewerState:
             cam_msg, image_height=image_height, image_width=image_width
         )
 
-        camera_to_world = camera_to_world_h[:3, :]
+        #! Apply Transformations Here
+        if do_transformations:
+            transformation_matrix = torch.tensor([[1., 0., 0., 0.], [0., 1., 0., 0.], [0., 0., 1., 0.], [0., 0., 0., 1.]])
+            c2w = transformation_matrix @ camera_to_world_h
+            camera_to_world = c2w[:3, :]
+        else:
+            camera_to_world = camera_to_world_h[:3, :]
+
         camera_to_world = torch.stack(
             [
                 camera_to_world[0, :],
