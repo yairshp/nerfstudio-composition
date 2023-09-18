@@ -44,7 +44,9 @@
       "request": "launch",
       "program": "nerfstudio/scripts/train.py",
       "console": "integratedTerminal",
-      "args": ["instant_ngp"]
+      "args": [
+        "instant_ngp"
+      ]
     },
     {
       "name": "Python: train ngp nerfstudio",
@@ -91,7 +93,9 @@
       "request": "launch",
       "program": "nerfstudio/scripts/train.py",
       "console": "integratedTerminal",
-      "args": ["semantic_nerf"]
+      "args": [
+        "semantic_nerf"
+      ]
     },
     {
       "name": "Python: NeuS on Replica",
@@ -100,7 +104,9 @@
       "program": "nerfstudio/scripts/train.py",
       "console": "integratedTerminal",
       "justMyCode": false,
-      "env": { "CUDA_VISIBLE_DEVICES": "0" },
+      "env": {
+        "CUDA_VISIBLE_DEVICES": "0"
+      },
       "args": [
         "neus",
         "--pipeline.model.sdf-field.inside-outside=True",
@@ -119,7 +125,9 @@
       "program": "nerfstudio/scripts/train.py",
       "console": "integratedTerminal",
       "justMyCode": false,
-      "env": { "CUDA_VISIBLE_DEVICES": "0" },
+      "env": {
+        "CUDA_VISIBLE_DEVICES": "0"
+      },
       "args": [
         "neus-facto",
         "--pipeline.model.sdf-field.inside-outside=True",
@@ -138,7 +146,9 @@
       "program": "nerfstudio/scripts/train.py",
       "console": "integratedTerminal",
       "justMyCode": false,
-      "env": { "CUDA_VISIBLE_DEVICES": "0" },
+      "env": {
+        "CUDA_VISIBLE_DEVICES": "0"
+      },
       "args": [
         "neus-facto",
         "--pipeline.model.sdf-field.inside-outside=False",
@@ -147,6 +157,64 @@
         "--data=data/sdfstudio-demo-data/dtu-scan65",
         "--include_mono_prior=False",
         "--auto-orient=True"
+      ]
+    },
+    {
+      "name": "Render Composition",
+      "type": "python",
+      "request": "launch",
+      "program": "nerfstudio/scripts/render_composition.py",
+      "console": "integratedTerminal",
+      "justMyCode": false,
+      "env": {
+        "CUDA_VISIBLE_DEVICES": "1"
+      },
+      "args": [
+        "camera-path",
+        "--output-path",
+        "/root/yairshp/output_models/transformations/renders/composition/2023-09-06_160422.mp4",
+        "--load-config",
+        // "/root/yairshp/output_models/transformations/outputs/bear/nerfacto/2023-09-06_160422/config.yml",
+        "/root/yairshp/output_models/transformations/outputs/teatime/nerfacto/2023-09-07_143857/config.yml",
+        // "/root/yairshp/output_models/transformations/outputs/lego/nerfacto/2023-09-13_143941/config.yml",
+        "--camera-path-filename",
+        // "/root/yairshp/data/place_object/bear/camera_paths/2023-09-06_160422.json",
+        "/root/yairshp/data/place_object/nerfstudio_scenes/teatime/camera_paths/2023-09-07_143857.json",
+        // "/root/yairshp/data/place_object/nerfstudio_scenes/blender_dataset/lego/camera_paths/2023-09-13_143941.json",
+        "--checkpoint-path",
+        // "/root/yairshp/output_models/transformations/outputs/bear/nerfacto/2023-09-06_160422/nerfstudio_models",
+        "/root/yairshp/output_models/transformations/outputs/teatime/nerfacto/2023-09-07_143857/nerfstudio_models",
+        // "/root/yairshp/output_models/transformations/outputs/lego/nerfacto/2023-09-13_143941/nerfstudio_models",
+        "--load-fg-config",
+        "/root/yairshp/output_models/transformations/outputs/bear/nerfacto/2023-09-06_160422/config.yml",
+        // "/root/yairshp/output_models/transformations/outputs/lego/nerfacto/2023-09-13_143941/config.yml",
+        "--fg-camera-path-filename",
+        "/root/yairshp/data/place_object/bear/camera_paths/2023-09-06_160422.json",
+        // "/root/yairshp/data/place_object/nerfstudio_scenes/blender_dataset/lego/camera_paths/2023-09-13_143941.json",
+        "--fg-checkpoint-path",
+        "/root/yairshp/output_models/transformations/outputs/bear/nerfacto/2023-09-06_160422/nerfstudio_models",
+        // "/root/yairshp/output_models/transformations/outputs/lego/nerfacto/2023-09-13_143941/nerfstudio_models",
+      ]
+    },
+    {
+      "name": "Viewer",
+      "type": "python",
+      "request": "launch",
+      "program": "nerfstudio/scripts/viewer/run_viewer.py",
+      "console": "integratedTerminal",
+      "justMyCode": false,
+      "env": {
+        "CUDA_VISIBLE_DEVICES": "1"
+      },
+      "args": [
+        "--load-config",
+        "/root/yairshp/output_models/transformations/outputs/bouquet/nerfacto/2023-09-14_143628/config.yml",
+        "--checkpoint-path",
+        "/root/yairshp/output_models/transformations/outputs/bouquet/nerfacto/2023-09-14_143628/nerfstudio_models",
+        "--load-fg-config",
+        "/root/yairshp/output_models/transformations/outputs/bear/nerfacto/2023-09-06_160422/config.yml",
+        "--fg-checkpoint-path",
+        "/root/yairshp/output_models/transformations/outputs/bear/nerfacto/2023-09-06_160422/nerfstudio_models",
       ]
     }
   ]

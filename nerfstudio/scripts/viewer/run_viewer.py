@@ -33,6 +33,7 @@ from nerfstudio.utils import writer
 from nerfstudio.utils.eval_utils import eval_setup
 from nerfstudio.viewer.server.viewer_state import ViewerState
 from nerfstudio.viewer_beta.viewer import Viewer as ViewerBetaState
+from nerfstudio.scripts.render import get_crop_from_json
 
 
 @dataclass
@@ -81,13 +82,17 @@ class RunViewer:
                 test_mode="test",
                 checkpoint_path=self.fg_checkpoint_path,
             )
-        if self.fg_camera_path_filename:
-            with open(str(self.fg_camera_path_filename), "r", encoding="utf-8") as f:
-                fg_camera_data = json.load(f)
-            fg_crop_data = get_crop_from_json(fg_camera_data)
-
+            fg_crop_data = ((-1.25, -0.45, -0.6), (0.35, 0.45, -0.05))
         else:
             fg_pipeline = None
+            fg_crop_data = None
+        # if self.fg_camera_path_filename:
+        #     with open(str(self.fg_camera_path_filename), "r", encoding="utf-8") as f:
+        #         fg_camera_data = json.load(f)
+        #     fg_crop_data = get_crop_from_json(fg_camera_data)
+        # else:
+        #     fg_crop_data = None
+
         num_rays_per_chunk = config.viewer.num_rays_per_chunk
         assert self.viewer.num_rays_per_chunk == -1
         config.vis = self.vis
@@ -96,7 +101,7 @@ class RunViewer:
 
         base_dir = None if self.checkpoint_path is None else self.checkpoint_path[:self.checkpoint_path.find("nerfstudio_models") - 1]
 
-        _start_viewer(config, pipeline, step, base_dir_str=base_dir)
+        _start_viewer(config, pipeline, step, base_dir_str=base_dir, fg_pipeline=fg_pipeline, fg_crop_data=fg_crop_data)
 
     def save_checkpoint(self, *args, **kwargs):
         """

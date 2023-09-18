@@ -292,7 +292,7 @@ class ViewerState:
         if self.trainer is not None:
             self.trainer.training_state = training_state
 
-    def get_camera(self, image_height: int, image_width: int, do_transformations: bool = False) -> Optional[Cameras]:
+    def get_camera(self, image_height: int, image_width: int, do_transformations: bool = False, translation = None) -> Optional[Cameras]:
         """
         Return a Cameras object representing the camera for the viewer given the provided image height and width
         """
@@ -305,7 +305,11 @@ class ViewerState:
 
         #! Apply Transformations Here
         if do_transformations:
-            transformation_matrix = torch.tensor([[1., 0., 0., 0.], [0., 1., 0., 0.], [0., 0., 1., 0.], [0., 0., 0., 1.]])
+            transformation_matrix = torch.tensor([[1.5, 0., 0., 0.], [0., 1.5, 0., 0.1], [0., 0., 1.5, 0.0], [0., 0., 0., 1.]])
+            if translation is not None:
+                transformation_matrix[0][3] = translation[0]
+                transformation_matrix[1][3] = translation[1]
+                transformation_matrix[2][3] = translation[2]
             c2w = transformation_matrix @ camera_to_world_h
             camera_to_world = c2w[:3, :]
         else:

@@ -128,10 +128,13 @@ class RenderStateMachine(threading.Thread):
 
         #! FG Camera
         if self.viewer.fg_pipeline is not None:
-            fg_camera = self.viewer.get_camera(image_height, image_width, do_transformations=True)
+            try:
+                fg_translation = self.viewer.control_panel.fg_translation
+            except AttributeError:
+                fg_translation = None
+            fg_camera = self.viewer.get_camera(image_height, image_width, do_transformations=True, translation=fg_translation)
         else:
             fg_camera = None
-
         #! FG Crop Data
         if self.viewer.fg_crop_data is not None:
             fg_crop_min, fg_crop_max = self.viewer.fg_crop_data
@@ -149,6 +152,8 @@ class RenderStateMachine(threading.Thread):
             #! FG Ray Bundle
             if fg_camera is not None:
                 fg_camera_ray_bundle = fg_camera.generate_rays(camera_indices=0, aabb_box=fg_render_aabb)
+            else:
+                fg_camera_ray_bundle = None
 
             with TimeWriter(None, None, write=False) as vis_t:
                 self.viewer.get_model().eval()
@@ -163,10 +168,11 @@ class RenderStateMachine(threading.Thread):
                             device=self.viewer.get_model().device,
                         )
                     with background_color_override_context(background_color), torch.no_grad():
-                        outputs = self.viewer.get_model().get_outputs_for_camera_ray_bundle(camera_ray_bundle)
+                        outputs = self.viewer.get_model().get_outputs_for_camera_ray_bundle(camera_ray_bundle, fg_pipeline=self.viewer.fg_pipeline, fg_camera_ray_bundle=fg_camera_ray_bundle)
                 else:
                     with torch.no_grad():
-                        outputs = self.viewer.get_model().get_outputs_for_camera_ray_bundle(camera_ray_bundle)
+                        # outputs = self.viewer.get_model().get_outputs_for_camera_ray_bundle(camera_ray_bundle)
+                        outputs = self.viewer.get_model().get_outputs_for_camera_ray_bundle(camera_ray_bundle, fg_pipeline=self.viewer.fg_pipeline, fg_camera_ray_bundle=fg_camera_ray_bundle)
                 self.viewer.get_model().train()
         num_rays = len(camera_ray_bundle)
         render_time = vis_t.duration

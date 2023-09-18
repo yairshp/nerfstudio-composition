@@ -136,6 +136,16 @@ class ControlPanel:
         self._crop_max = ViewerVec3(
             "Crop Max", (1, 1, 1), 0.05, cb_hook=crop_update_cb, hint="Maximum value of the crop"
         )
+        #! FG Transformations
+        self._fg_translation_viewport = ViewerCheckbox(
+            "Enable ",
+            False,
+            cb_hook=lambda han: [self.update_control_panel(), crop_update_cb(han), rerender_cb(han)],
+            hint="Update FG Translation Vector",
+        )
+        self._fg_translation = ViewerVec3(
+            "FG Translation", (0, 0 ,0), 0.05, cb_hook=crop_update_cb, hint="FG Translation Vector"
+        ) 
         self._time = ViewerSlider("Time", 0.0, 0.0, 1.0, 0.01, cb_hook=rerender_cb, hint="Time to render")
         self._time_enabled = time_enabled
 
@@ -172,6 +182,10 @@ class ControlPanel:
             self.add_element(self._background_color, additional_tags=("crop",))
             self.add_element(self._crop_min, additional_tags=("crop",))
             self.add_element(self._crop_max, additional_tags=("crop",))
+
+        #! Translation Options
+        with self.viser_server.gui_folder("FG Translation"):
+            self.add_element(self._fg_translation, additional_tags=("fg_translation",))
 
         self.add_element(self._time, additional_tags=("time",))
 
@@ -302,6 +316,16 @@ class ControlPanel:
     def crop_max(self, value: Tuple[float, float, float]):
         """Sets the crop max setting"""
         self._crop_max.value = value
+
+    @property
+    def fg_translation(self) -> Tuple[float, float, float]:
+        """Returns the current crop max setting"""
+        return self._fg_translation.value
+
+    @fg_translation.setter
+    def fg_translation(self, value: Tuple[float, float, float]):
+        self._fg_translation.value = value
+
 
     @property
     def background_color(self) -> Tuple[int, int, int]:
