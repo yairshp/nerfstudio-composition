@@ -320,24 +320,24 @@ class ViewerState:
                 
                 # Rotation X
                 rotation_x_matrix = translation_matrix.clone()
-                rotation_x_matrix[1][1] = math.cos(transformations['rotation_x'])
-                rotation_x_matrix[2][2] = math.cos(transformations['rotation_x'])
-                rotation_x_matrix[1][2] = math.sin(transformations['rotation_x'])
-                rotation_x_matrix[2][1] = -math.sin(transformations['rotation_x'])
+                rotation_x_matrix[1][1] = math.cos(math.radians(transformations['rotation_x']))
+                rotation_x_matrix[2][2] = math.cos(math.radians(transformations['rotation_x']))
+                rotation_x_matrix[1][2] = math.sin(math.radians(transformations['rotation_x']))
+                rotation_x_matrix[2][1] = -math.sin(math.radians(transformations['rotation_x']))
 
                 # Rotation Y
                 rotation_y_matrix = translation_matrix.clone()
-                rotation_y_matrix[0][0] = math.cos(transformations['rotation_y'])
-                rotation_y_matrix[0][2] = -math.sin(transformations['rotation_y'])
-                rotation_y_matrix[2][0] = math.sin(transformations['rotation_y'])
-                rotation_y_matrix[2][2] = math.cos(transformations['rotation_y'])
+                rotation_y_matrix[0][0] = math.cos(math.radians(transformations['rotation_y']))
+                rotation_y_matrix[0][2] = -math.sin(math.radians(transformations['rotation_y']))
+                rotation_y_matrix[2][0] = math.sin(math.radians(transformations['rotation_y']))
+                rotation_y_matrix[2][2] = math.cos(math.radians(transformations['rotation_y']))
 
                 # Rotation Z
                 rotation_z_matrix = translation_matrix.clone()
-                rotation_z_matrix[0][0] = math.cos(transformations['rotation_z'])
-                rotation_z_matrix[1][1] = math.cos(transformations['rotation_z'])
-                rotation_z_matrix[0][1] = math.sin(transformations['rotation_z'])
-                rotation_z_matrix[1][0] = -math.sin(transformations['rotation_z'])
+                rotation_z_matrix[0][0] = math.cos(math.radians(transformations['rotation_z']))
+                rotation_z_matrix[1][1] = math.cos(math.radians(transformations['rotation_z']))
+                rotation_z_matrix[0][1] = math.sin(math.radians(transformations['rotation_z']))
+                rotation_z_matrix[1][0] = -math.sin(math.radians(transformations['rotation_z']))
                 
                 # Translation
                 translation_matrix[0][3] = transformations['translation'][0]
