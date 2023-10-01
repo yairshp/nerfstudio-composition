@@ -146,6 +146,22 @@ class ControlPanel:
         self._fg_translation = ViewerVec3(
             "FG Translation", (0, 0 ,0), 0.05, cb_hook=crop_update_cb, hint="FG Translation Vector"
         ) 
+        self._fg_scale = ViewerNumber(
+            "FG Scale", 1.0, cb_hook=crop_update_cb, hint="FG Scale Vector"
+        ) 
+        # self._fg_rotation_1 = ViewerVec3(
+        #     "FG Rotation 1", (1., 0., 0.), 0.05, cb_hook=crop_update_cb, hint="FG Rotation 1 Vector"
+        # )
+        # self._fg_rotation_2 = ViewerVec3(
+        #     "FG Rotation 2", (0., 1., 0.), 0.05, cb_hook=crop_update_cb, hint="FG Rotation 2 Vector"
+        # )
+        # self._fg_rotation_3 = ViewerVec3(
+        #     "FG Rotation 3", (0., 0., 1.), 0.05, cb_hook=crop_update_cb, hint="FG Rotation 3 Vector"
+        # )
+        self._fg_rotations = ViewerVec3(
+            "FG Rotations", (0., 0., 0.), 0.05, cb_hook=crop_update_cb, hint="FG Rotations Angles (X, Y, Z)"
+        )
+        self._time = ViewerSlider("Time", 0.0, 0.0, 1.0, 0.01, cb_hook=rerender_cb, hint="Time to render")
         self._time = ViewerSlider("Time", 0.0, 0.0, 1.0, 0.01, cb_hook=rerender_cb, hint="Time to render")
         self._time_enabled = time_enabled
 
@@ -186,6 +202,11 @@ class ControlPanel:
         #! Translation Options
         with self.viser_server.gui_folder("FG Translation"):
             self.add_element(self._fg_translation, additional_tags=("fg_translation",))
+            self.add_element(self._fg_scale, additional_tags=("fg_scale",))
+            # self.add_element(self._fg_rotation_1, additional_tags=("fg_rotation",))
+            # self.add_element(self._fg_rotation_2, additional_tags=("fg_rotation",))
+            # self.add_element(self._fg_rotation_3, additional_tags=("fg_rotation",))
+            self.add_element(self._fg_rotations, additional_tags=("fg_rotations",))
 
         self.add_element(self._time, additional_tags=("time",))
 
@@ -319,13 +340,54 @@ class ControlPanel:
 
     @property
     def fg_translation(self) -> Tuple[float, float, float]:
-        """Returns the current crop max setting"""
         return self._fg_translation.value
 
     @fg_translation.setter
     def fg_translation(self, value: Tuple[float, float, float]):
         self._fg_translation.value = value
 
+    @property
+    def fg_scale(self) -> Tuple[float, float, float]:
+        return self._fg_scale.value
+
+    @fg_scale.setter
+    def fg_scale(self, value: Tuple[float, float, float]):
+        self._fg_scale.value = value
+
+    @property
+    def fg_rotations(self) -> Tuple[float, float, float]:
+        return self._fg_rotations.value
+    
+    @fg_rotations.setter
+    def fg_rotations(self, value: Tuple[float, float, float]):
+        self._fg_rotations.value = value
+
+    # @property
+    # def fg_rotation_1(self) -> Tuple[float, float, float]:
+    #     """Returns the current crop max setting"""
+    #     return self._fg_rotation_1.value
+
+    # @fg_rotation_1.setter
+    # def fg_rotation_1(self, value: Tuple[float, float, float]):
+    #     self._fg_rotation_1.value = value
+
+    # @property
+    # def fg_rotation_2(self) -> Tuple[float, float, float]:
+    #     """Returns the current crop max setting"""
+    #     return self._fg_rotation_2.value
+
+    # @fg_rotation_2.setter
+    # def fg_rotation_2(self, value: Tuple[float, float, float]):
+    #     self._fg_rotation_2.value = value
+
+    # @property
+    # def fg_rotation_3(self) -> Tuple[float, float, float]:
+    #     """Returns the current crop max setting"""
+    #     return self._fg_rotation_3.value
+
+    # @fg_rotation_3.setter
+    # def fg_rotation_3(self, value: Tuple[float, float, float]):
+    #     self._fg_rotation_3.value = value
 
     @property
     def background_color(self) -> Tuple[int, int, int]:

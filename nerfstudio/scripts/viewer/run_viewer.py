@@ -82,7 +82,13 @@ class RunViewer:
                 test_mode="test",
                 checkpoint_path=self.fg_checkpoint_path,
             )
-            fg_crop_data = ((-1.25, -0.45, -0.6), (0.35, 0.45, -0.05))
+            # fg_crop_data = ((-1.25, -0.45, -0.6), (0.35, 0.45, -0.05)) # bear
+            # fg_crop_data = ((-0.29, -0.03, -0.41), (0.2, 0.68, -0.25)) # donuts
+            # fg_crop_data = ((-0.3, -0.2, -0.55), (0.15, 0.25, -0.1)) # bouquet
+            # fg_crop_data = ((-0.3, 0.15, -0.43), (-0.15, 0.3, -0.2)) # bag from teatime
+            fg_crop_data = None
+            # print(pipeline)
+            # print(fg_pipeline)
         else:
             fg_pipeline = None
             fg_crop_data = None

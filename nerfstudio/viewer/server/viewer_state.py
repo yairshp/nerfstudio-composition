@@ -19,6 +19,7 @@ import threading
 from pathlib import Path
 from typing import TYPE_CHECKING, List, Literal, Optional
 
+import math
 import numpy as np
 import torch
 from rich import box, style
@@ -292,7 +293,7 @@ class ViewerState:
         if self.trainer is not None:
             self.trainer.training_state = training_state
 
-    def get_camera(self, image_height: int, image_width: int, do_transformations: bool = False, translation = None) -> Optional[Cameras]:
+    def get_camera(self, image_height: int, image_width: int, do_transformations: bool = False, transformations = None) -> Optional[Cameras]:
         """
         Return a Cameras object representing the camera for the viewer given the provided image height and width
         """
@@ -305,12 +306,62 @@ class ViewerState:
 
         #! Apply Transformations Here
         if do_transformations:
-            transformation_matrix = torch.tensor([[1.5, 0., 0., 0.], [0., 1.5, 0., 0.1], [0., 0., 1.5, 0.0], [0., 0., 0., 1.]])
-            if translation is not None:
-                transformation_matrix[0][3] = translation[0]
-                transformation_matrix[1][3] = translation[1]
-                transformation_matrix[2][3] = translation[2]
-            c2w = transformation_matrix @ camera_to_world_h
+            translation_matrix = torch.tensor([[1., 0., 0., 0.], [0., 1., 0., 0.], [0., 0., 1., 0.], [0., 0., 0., 1.]])
+            c2w = translation_matrix @ camera_to_world_h
+            # transformation_matrix = torch.tensor([[2.5, 0., 0., 0.], [0., 2.5, 0., 0.], [0., 0., 2.5, 0.0], [0., 0., 0., 1.]])
+            # if translation is not None:
+            if transformations is not None:
+
+                # Scale
+                scale_matrix = translation_matrix.clone()
+                scale_matrix[0][0] = transformations['scale']
+                scale_matrix[1][1] = transformations['scale']
+                scale_matrix[2][2] = transformations['scale']
+                
+                # Rotation X
+                rotation_x_matrix = translation_matrix.clone()
+                rotation_x_matrix[1][1] = math.cos(transformations['rotation_x'])
+                rotation_x_matrix[2][2] = math.cos(transformations['rotation_x'])
+                rotation_x_matrix[1][2] = math.sin(transformations['rotation_x'])
+                rotation_x_matrix[2][1] = -math.sin(transformations['rotation_x'])
+
+                # Rotation Y
+                rotation_y_matrix = translation_matrix.clone()
+                rotation_y_matrix[0][0] = math.cos(transformations['rotation_y'])
+                rotation_y_matrix[0][2] = -math.sin(transformations['rotation_y'])
+                rotation_y_matrix[2][0] = math.sin(transformations['rotation_y'])
+                rotation_y_matrix[2][2] = math.cos(transformations['rotation_y'])
+
+                # Rotation Z
+                rotation_z_matrix = translation_matrix.clone()
+                rotation_z_matrix[0][0] = math.cos(transformations['rotation_z'])
+                rotation_z_matrix[1][1] = math.cos(transformations['rotation_z'])
+                rotation_z_matrix[0][1] = math.sin(transformations['rotation_z'])
+                rotation_z_matrix[1][0] = -math.sin(transformations['rotation_z'])
+                
+                # Translation
+                translation_matrix[0][3] = transformations['translation'][0]
+                translation_matrix[1][3] = transformations['translation'][1]
+                translation_matrix[2][3] = transformations['translation'][2]
+
+                c2w = rotation_z_matrix @ rotation_y_matrix @ rotation_x_matrix @ scale_matrix @ translation_matrix @ camera_to_world_h
+                
+                # # rotation 1
+                # transformation_matrix[0][0] = transformations['rotation_1'][0]
+                # transformation_matrix[0][1] = transformations['rotation_1'][1]
+                # transformation_matrix[0][2] = transformations['rotation_1'][2]
+
+                # # rotation 2
+                # transformation_matrix[1][0] = transformations['rotation_2'][0]
+                # transformation_matrix[1][1] = transformations['rotation_2'][1]
+                # transformation_matrix[1][2] = transformations['rotation_2'][2]
+
+                # # rotation 3
+                # transformation_matrix[2][0] = transformations['rotation_3'][0]
+                # transformation_matrix[2][1] = transformations['rotation_3'][1]
+                # transformation_matrix[2][2] = transformations['rotation_3'][2]
+
+            # c2w = transformation_matrix @ camera_to_world_h
             camera_to_world = c2w[:3, :]
         else:
             camera_to_world = camera_to_world_h[:3, :]

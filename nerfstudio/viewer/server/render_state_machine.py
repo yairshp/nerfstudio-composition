@@ -130,9 +130,18 @@ class RenderStateMachine(threading.Thread):
         if self.viewer.fg_pipeline is not None:
             try:
                 fg_translation = self.viewer.control_panel.fg_translation
+                fg_scale = self.viewer.control_panel.fg_scale
+                fg_rotation_x = self.viewer.control_panel.fg_rotations[0]
+                fg_rotation_y = self.viewer.control_panel.fg_rotations[1]
+                fg_rotation_z = self.viewer.control_panel.fg_rotations[2]
             except AttributeError:
                 fg_translation = None
-            fg_camera = self.viewer.get_camera(image_height, image_width, do_transformations=True, translation=fg_translation)
+                fg_scale = None
+                fg_rotation_x = None
+                fg_rotation_y = None
+                fg_rotation_z = None
+            transformations = {"translation": fg_translation, "scale": fg_scale, "rotation_x": fg_rotation_x, "rotation_y": fg_rotation_y, "rotation_z": fg_rotation_z}
+            fg_camera = self.viewer.get_camera(image_height, image_width, do_transformations=True, transformations=transformations)
         else:
             fg_camera = None
         #! FG Crop Data

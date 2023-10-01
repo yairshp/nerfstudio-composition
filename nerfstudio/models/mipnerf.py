@@ -100,7 +100,7 @@ class MipNerfModel(Model):
         param_groups["fields"] = list(self.field.parameters())
         return param_groups
 
-    def get_outputs(self, ray_bundle: RayBundle):
+    def get_outputs(self, ray_bundle: RayBundle, fg_pipeline=None, fg_ray_bundle=None):
         if self.field is None:
             raise ValueError("populate_fields() must be called before get_outputs")
 
@@ -109,34 +109,52 @@ class MipNerfModel(Model):
 
         # First pass:
         field_outputs_coarse = self.field.forward(ray_samples_uniform)
-        weights_coarse = ray_samples_uniform.get_weights(field_outputs_coarse[FieldHeadNames.DENSITY])
+        if fg_pipeline is not None:
+            fg_ray_samples_uniform = fg_pipeline.model.sampler_uniform(fg_ray_bundle)
+            fg_field_outputs_coarse = fg_pipeline.model.field.forward(fg_ray_samples_uniform)
+            density = field_outputs_coarse[FieldHeadNames.DENSITY].clone()
+            # density_mask = field_outputs_coarse[FieldHeadNames.DENSITY] <= 0.001
+            density_mask = fg_field_outputs_coarse[FieldHeadNames.DENSITY] != 0.
+            # white_color_mask = (fg_field_outputs_coarse[FieldHeadNames.RGB] != 1.).all(axis=2).unsqueeze(2)
+            # nan_mask = ~(torch.isnan(fg_field_outputs_coarse[FieldHeadNames.RGB]).all(axis=2).unsqueeze(2))
+            # mask = (density_mask & white_color_mask & nan_mask)
+            mask = density_mask
+            density[mask] = fg_field_outputs_coarse[FieldHeadNames.DENSITY][mask]
+            weights_coarse = ray_samples_uniform.get_weights(density)
+            rgbs = field_outputs_coarse[FieldHeadNames.RGB].clone()
+            rgbs[mask.expand(-1, -1, 3)] = fg_field_outputs_coarse[FieldHeadNames.RGB][mask.expand(-1, -1 ,3)]
+            rgb_outputs = rgbs
+        else:
+            weights_coarse = ray_samples_uniform.get_weights(field_outputs_coarse[FieldHeadNames.DENSITY])
+            rgb_outputs = field_outputs_coarse[FieldHeadNames.RGB]
         rgb_coarse = self.renderer_rgb(
-            rgb=field_outputs_coarse[FieldHeadNames.RGB],
+            # rgb=field_outputs_coarse[FieldHeadNames.RGB],
+            rgb_outputs,
             weights=weights_coarse,
         )
-        accumulation_coarse = self.renderer_accumulation(weights_coarse)
-        depth_coarse = self.renderer_depth(weights_coarse, ray_samples_uniform)
+        # accumulation_coarse = self.renderer_accumulation(weights_coarse)
+        # depth_coarse = self.renderer_depth(weights_coarse, ray_samples_uniform)
 
-        # pdf sampling
-        ray_samples_pdf = self.sampler_pdf(ray_bundle, ray_samples_uniform, weights_coarse)
+        # # pdf sampling
+        # ray_samples_pdf = self.sampler_pdf(ray_bundle, ray_samples_uniform, weights_coarse)
 
-        # Second pass:
-        field_outputs_fine = self.field.forward(ray_samples_pdf)
-        weights_fine = ray_samples_pdf.get_weights(field_outputs_fine[FieldHeadNames.DENSITY])
-        rgb_fine = self.renderer_rgb(
-            rgb=field_outputs_fine[FieldHeadNames.RGB],
-            weights=weights_fine,
-        )
-        accumulation_fine = self.renderer_accumulation(weights_fine)
-        depth_fine = self.renderer_depth(weights_fine, ray_samples_pdf)
+        # # Second pass:
+        # field_outputs_fine = self.field.forward(ray_samples_pdf)
+        # weights_fine = ray_samples_pdf.get_weights(field_outputs_fine[FieldHeadNames.DENSITY])
+        # rgb_fine = self.renderer_rgb(
+        #     rgb=field_outputs_fine[FieldHeadNames.RGB],
+        #     weights=weights_fine,
+        # )
+        # accumulation_fine = self.renderer_accumulation(weights_fine)
+        # depth_fine = self.renderer_depth(weights_fine, ray_samples_pdf)
 
         outputs = {
             "rgb_coarse": rgb_coarse,
-            "rgb_fine": rgb_fine,
-            "accumulation_coarse": accumulation_coarse,
-            "accumulation_fine": accumulation_fine,
-            "depth_coarse": depth_coarse,
-            "depth_fine": depth_fine,
+            # "rgb_fine": rgb_fine,
+            # "accumulation_coarse": accumulation_coarse,
+            # "accumulation_fine": accumulation_fine,
+            # "depth_coarse": depth_coarse,
+            # "depth_fine": depth_fine,
         }
         return outputs
 

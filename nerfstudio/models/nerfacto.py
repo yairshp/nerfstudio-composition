@@ -282,7 +282,8 @@ class NerfactoModel(Model):
         ray_samples, weights_list, ray_samples_list = self.proposal_sampler(ray_bundle, density_fns=self.density_fns)
         field_outputs = self.field.forward(ray_samples, compute_normals=self.config.predict_normals)
         if fg_pipeline is not None:
-            fg_ray_samples, fg_weights_list, fg_ray_samples_list = fg_pipeline.model.proposal_sampler(fg_ray_bundle, density_fns=fg_pipeline.model.density_fns)
+            # fg_ray_samples, fg_weights_list, fg_ray_samples_list = fg_pipeline.model.proposal_sampler(fg_ray_bundle, density_fns=fg_pipeline.model.density_fns)
+            fg_ray_samples = fg_pipeline.model.sampler_uniform(fg_ray_bundle)
             fg_field_outputs = fg_pipeline.model.field.forward(fg_ray_samples, compute_normals=self.config.predict_normals)
             density = field_outputs[FieldHeadNames.DENSITY].clone()
             density_mask = field_outputs[FieldHeadNames.DENSITY] <= 0.001
